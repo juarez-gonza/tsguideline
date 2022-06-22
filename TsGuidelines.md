@@ -235,31 +235,337 @@ Just don't.
 
 ### Type-casting and Coercions
 
-### Generics
+### usage of `?:` or `| undefined`
+
+### enum types
 
 ### Indexables
+
+### Generics
 
 ## JavaScript Features
 
 ### Local variable declarations
 
+#### `var` declarations
+
+Don't use `var`. Reasoning: `var` declared variables are function-scoped
+instead of block-scoped. `let` and `const` are block-scoped, use these instead.
+
+```TypeScript
+// BAD: uses function-scoped declarations
+function foo() { // start of function block
+  var something = "Hello ";
+
+  if (true) { // start of if-statement block
+    var something = "World!"; // something here refers to the same variable
+                              // declared outside of the if-statement
+  } // end of if-statement block
+
+  console.log(something); // outputs "World!"
+} // end of function block
+
+// GOOD: uses block-scoped declarations
+function bar() { // start of function block
+  const something = "Hello ";
+
+  if (true) { // start of if-statement block
+    const something = "World!"; // something here refers to a different variable
+                                // from the one declared outside of the if-statement
+  } // end of if-statement block
+
+  console.log(something); // outputs "Hello "
+} // end of function block
+```
+
+#### `const` by default
+
+Use `const` keyword for variable declarations by default. Immutable values
+are much easier to reason about.
+
 ### Array literals and Array manipulation
+
+#### Literal Array Syntax
+
+Use literal syntax `[]` instead of `new Array()`.
+
+#### Assignment and copying
+
+Use `someArray.push(something)` instead of direct assignment
+(`someArray[someArray.length] = something`).
+
+Spread operator (`...`) for copying arrays instead of `Array.from()`.
+
+#### Array.prototype methods
+
+**Use these methods extensively** for array manipulation.
+
+- **Always use return** statements in array methods callbacks (exception: `forEach`).
+- Don't use iterator loops as `for ... of` and `for ... in`.
+  - Use `map()`, `every()`, `filter()`, `find()`, etc. for iterations
+  over arrays.
+- Use `Object.keys()`, `Object.values()`, `Object.entries()` to produce arrays
+from objects so you can iterate over objects.
+
+```TypeScript
+const numbers = [1, 2, 3, 4, 5];
+
+// BAD: uses `for ... of` syntax for iterators
+let sum = 0;
+for (let num of numbers) {
+  sum += num;
+}
+
+// GOOD: uses Array.prototype.forEach
+let sum = 0;
+numbers.forEach((num) => {
+  sum += num;
+});
+
+// BETTER: clean and concise functional form
+const sum = numbers.reduce((total, num) => total + num, 0);
+
+// BAD: conventional loop
+const increasedByOne = [];
+for (let i = 0; i < numbers.length; i++) {
+  increasedByOne.push(numbers[i] + 1);
+}
+
+// GOOD: uses Array.prototype.forEach
+const increasedByOne = [];
+numbers.forEach((num) => {
+  increasedByOne.push(num + 1);
+});
+
+// BETTER: clean and concise functional form
+const increasedByOne = numbers.map((num) => num + 1);
+```
 
 ### Object literals and Object manipulation
 
+#### Literal Object Syntax
+
+Use literal syntax `{}` instaed of `new Object()`.
+
+#### Dot notation, computed property names, quoted identifiers
+
+- Use dot notation (`.`) for accessing properties. Do not use bracket notation (`[]`)
+except for the special case where it is an [indexable]( #indexable )
+- Use computed property names `{[nameComputation()]: value}` when creating objects
+with dynamic property names. But minimize usage of such objects unless strictly needed.
+- Use quoted identifiers for identifiers that would be unvalid otherwise. Do not
+mix quoted and unquoted identifiers.
+
+```TypeScript
+///// Quoted and unquoted keys
+
+// BAD: uses quoted identifiers unnecessarily
+const myObj = {
+  'key1': {
+    'key1': 3
+  }
+};
+
+// BAD: mixes quoted and unquoted
+const myObj = {
+  key1: 2,
+  'key-2': 3
+};
+
+// GOOD: is consistent with necessarily quoted keys
+const myObj = {
+  'key-1': 2,
+  'key-2': 3
+};
+
+///// Property name computation
+
+// BAD: adds calculated key in two steps
+const myObj = {
+  key1: 2,
+};
+obj[nameComputation('something')] = 3;
+
+// GOOD: adds calculated key using computed property name notation
+const myObj = {
+  key1: 2,
+  [nameComputation('something')] = 3
+}
+
+// BETTER: does not use quoted identifiers
+const myObj = {
+  key1: { key1: 3 }
+};
+
+///// Property access
+
+// BAD: uses [key] notation unnecessarily
+const val = myObj['key1']['key1'];
+
+// BETTER: uses dot notation
+const val = myObj.key1.key2;
+```
+
+#### `Object.prototype.foo`
+
+Do not use Object.prototype functions directly (such as `hasOwnProperty()`).
+This may not only be obfuscated by own property names in the object itself but
+can also complicate tasks for the compiler such as string literal renaming/obfuscation.
+
 ### String literals
+
+- Use double quotes for strings.
+- Long strings should not be separated across multiple lines. It makes
+them harder to find by tooling.
+- Use template strings with \`\` notation instead of concatenation.
 
 ### Other literals
 
+Do not use other wrapper objects of primitive types (`Boolean`, `Number`, `String`,
+`Symbol`) without `new` keyword. These are *NOT* the same type as their lowercased
+counterparts `boolean`, `number`, `string`, etc. Prefer using the lowercased ones.
+
 ### Functions
+
+#### Named functions vs function declarations
+
+Use `function foo() { ... }` to declare named top-level functions instead of
+`const foo = function() { ... }` or `const foo = () => { ... }`.
+
+TypeScript disallows rebinding functions, so preventing overwriting a function declaration
+by using `const` is unnecessary.
+
+#### Arrow functions
+
+- Use arrow functions for anonymous functions such as *higher-order functions* (callbacks
+and functions returned from functions) and immediatly invoked functions.
+
+- Use arrow functions to avoid `this` keyword rebinding. If you *need* `this`
+keyword rebinding, think twice about your code since that can get quite complicated
+to understand in a rather near future.
+
+- DO NOT use arrow functions as class/object properties.
+
+```TypeScript
+///// as higher-order function
+
+num = [1, 2, 3];
+duplicatedNum = num.map(n => n * 2); // arrow as callback
+
+const duplicate = x => y => x * y; // arrow as function returned from function
+// the above is equivalent to:
+//  const duplicate = (x) => { return (y) => { return x * y; } }
+
+///// to avoid 'this' rebinding
+
+// BAD: uses function expression and behaves unexpectedly with 'this keyword'
+class LazyNumToMultiply {
+  constructor(private readonly x: number) {}
+
+  multiply(y: number) {
+    return function() { return this.x * y; };
+  }
+}
+
+const partialMult = new LazyNumToMultiply(2);
+const lazyMul = partialMult.multiply(3);
+console.log(lazyMul()); // undefined behaviour. most likely an error.
+
+// GOOD: uses arrow function to avoid 'this' rebinding
+class LazyNumToMultiply {
+  constructor(private readonly x: number) {}
+
+  multiply(y: number) {
+    return () => this.x * y;
+  }
+}
+
+const partialMult = new LazyNumToMultiply(2);
+const lazyMul = partialMult.multiply(3);
+console.log(lazyMul()); // prints 6
+```
+
+### Class
+
+#### `prototype` vs. `class`
+
+Just use `class`.
+
+#### `constructor()`
+
+Constructors are optional. A default constructor which calls `super()` to the parent
+class is provided.
+
+Subclasses with a non-default constructor must call `super()` prior to any access
+to the instance (ex.: via the `this` keyword).
+
+**Never ommit `()` when calling a constructor**
+
+#### Property visibility
+
+- no `#private`, use TypeScript `private` modifier.
+- use `readonly` for properties that are never reassigned outside of the constructor.
+- use [TypeScript parameter properties](https://www.typescriptlang.org/docs/handbook/2/classes.html#parameter-properties)
+if possible. This makes for concise class definitions.
+
+#### Getters and setters
+
+Do not use JS `get`/`set` as they cause unexpected side effects and are harder
+to test, maintain, reason about. Use accesors named something like `getVal()`
+and `setVal` if absolutely needed.
+
+#### Static methods
+
+- Where it does not interfere with readability, prefer module-local functions
+over private static methods.
+- Static methods should only be called on the base class itself. A subclass
+**cannot** call a parent's class static method.
 
 ### Control structures
 
+#### Iterations
+
+Check [this section](#array-literals-and-array-manipulation)
+
+#### `switch/case` statements
+
+Use braces `{}` for each of the cases.
+This together with `const` and `let` block-scope will ensure each case has
+it's own lexical declarations.
+
+#### Ternary expresion
+
+Ternary expressions must not be nested.
+
+```TypeScript
+// BAD
+const foo = maybe1 > maybe2
+  ? "bar"
+  : value1 > value2 ? "baz" : null;
+
+// GOOD: split into 2 separated ternary expressions
+const maybeNull = value1 > value2 ? 'baz' : null;
+
+const foo = maybe1 > maybe2 ? 'bar' : maybeNull;
+```
+
 ### Equality Checks
 
-#### null and undefined
+**Always use `===` and `!==`**, the correspondent two symbol alternatives (`==`
+and `!=`) use type coercion and that is not a desired behaviour
+(exception: using `== null` to check both for `undefined` and `null`).
+
+### null and undefined
+
+Always use `null` for internal code.
 
 ### Disallowed
+
+- `eval()`, it's unsafe.
+- `with`
+- relying on automatic semicolon insertion
+- non-standard features
+- modifying builtin objects
 
 ## Asynchronous Programming
 
@@ -302,7 +608,7 @@ function nthFibonacci2(n: number) {
   // ... rest of the function
 }
 
-// BAD: does not even throw
+// BAD: exceptional case (argument precondition not accomplished) does not throw.
 function nthFibonacci3(n: number) {
   if (n < 1)
     return undefined;
@@ -422,7 +728,7 @@ Do not write type information in names:
 keyword for that.
 - Actually, don't prefix or suffix with `_` at all. For array destructuring
 ignoring parameters, just add a comma `const [a,,c] = [1,2,3];
-// value at idx 2 is ignored`.
+// value at index 1 is ignored`.
 
 ## Formatting
 
