@@ -225,23 +225,130 @@ Just don't.
 
 ### Type Inference
 
-### Null vs Undefined
+Code can rely on TypeScript's type inference.
 
-### `any` and `unknown`
+**Exception**: [function return types](#function-return-types).
+
+```TypeScript
+const x = 5; // GOOD: type inferred
+
+const y: number = 11; // BAD: typing here does not add readability.
+```
+
+### `any` type
+
+TS `any` is a super and subtype of all types. It allows dereferncing all properties.
+In other words, `any` does not allow TypeScript to be TypeScript.
+
+Unknown on the other hand. Just tells TypeScript that we do not know the
+type of a value. But it does not allow assigning an unknown value or
+assigning to an unknown value.
+
+**Consider not using `any`**. Try, in this order, on of:
+
+- Prividing a more specific type.
+- Writing [generic code](#generics).
+- Using unknown.
+- Supress the warning and document why.
 
 ### `interface` vs. `type`
 
-### Function return-types
+use `interface` whenever possible. sometimes `type` comes in handy.
+there are [technical reasons to prefer `interface`](https://ncjamieson.com/prefer-interfaces/).
+
+### Function return types
+
+Always annotate return types even if TypeScript can infere them. This
+helps you as a programmer in knowing what you are looking for (recommendation:
+write the return type before writing the body of the function), and the
+future modifier of the code to know what's the "endgoal" of the function.
+
+Otherwise, inadvertently modifying return type will almost surely break its callers.
+
+If you consider creating a whole interface for the return type of a function
+is "too much", inline the return type as in
+`function foo(): { message: string , codeStatus: number } { ... }`.
+
+### Function Implementing Interface
+
+If a function implements an interface, it is acceptable to declare it as
+a `const` qualified variable assigned to an anonymous arrow function
+
+```TypeScript
+interface SortFunction {
+  (source: number[]): number[];
+}
+
+const quickSort: SortFunction = (source) => { ... } // GOOD
+const mergeSort: SortFunction = function (source) { ... } // BAD: not an arrow function
+function insertionSort(source) { ... } // BAD: implements interface but does
+                                       // declare itself as such
+```
 
 ### Type-casting and Coercions
 
+- Do not cast just to lie to the type system.
+- Only typecast when you absolutely know that an object corresponds to a given
+type. Put a small comment saying why you are so sure of your casting.
+- use `as` syntax not `<>`. The latter does not play nicely sometimes.
+
 ### usage of `?:` or `| undefined`
+
+Use optional `?:` syntax for optional properties or parameters instead of `|undefined`.
+
+NOTE: For optional parameters try to always provide a default value. Always
+position optional parameters after needed parameters.
+
+```TypeScript
+// BAD: uses `|undefined`
+interface Client {
+  name: string;
+  surname: string;
+  age: number | undefined;
+}
+
+// GOOD: uses TS optional syntax
+interface Client {
+  name: string;
+  surname: string;
+  age?: number;
+}
+
+// BAD: uses `|undefined`
+function doSomething(x: number, y: number|undefined) { ... }
+
+// GOOD: uses TS optional syntax
+function doSomething(x: number, y?: number) { ... }
+
+// BETTER: provides default value and optional parameter after needed parameter
+function doSomething(x: number, y=1) { ... }
+```
 
 ### enum types
 
+Always use `enum` and not `const enum` *in exported enums*.
+Both cannot be mutated. `const enum` is an optimization that require a
+declaration file when exported. This prevents --isolatedModules option
+sometimes required (for example.: by create-react-app).
+
+For non exported enums, `const enum` is a nice optimization. But be sure
+of what you are doing because it may be exported in the future.
+
 ### Indexables
 
+Sometimes indexable objects with `[]` such as dictionaries are very useful.
+
+Your options are:
+
+- ES6 `Map` and `Set`. This is the preferable option.
+- indexable types as `{[key: SomeType]: SomeOtherType }`. The second best option.
+
+Record<Keys, ValueType>, allows constructing types with a statically defined set
+of keys. But it's an option.
+
 ### Generics
+
+Don't go crazy on generics. But feel free to use them when suitable.
 
 ## JavaScript Features
 
@@ -434,6 +541,9 @@ Use `function foo() { ... }` to declare named top-level functions instead of
 
 TypeScript disallows rebinding functions, so preventing overwriting a function declaration
 by using `const` is unnecessary.
+
+One exception of assigning a function expression to a variable is explained
+['Function Implementing Interface' section](#function-implementing-interface).
 
 #### Arrow functions
 
