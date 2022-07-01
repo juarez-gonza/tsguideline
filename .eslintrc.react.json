@@ -1,18 +1,65 @@
 {
-    "root": true,
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
     "extends": [
         "eslint:recommended",
+        "plugin:react/recommended",
         "plugin:@typescript-eslint/recommended",
         "plugin:import/recommended",
         "plugin:import/typescript"
     ],
     "parser": "@typescript-eslint/parser",
-    "parserOptions": { "project": ["./tsconfig.json"] },
+    "parserOptions": {
+        "project": ["./tsconfig.json"],
+        "ecmaFeatures": {
+            "jsx": true
+        },
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
     "plugins": [
-        "@typescript-eslint",
-        "import"
+        "react",
+        "react-hooks",
+        "import",
+        "@typescript-eslint"
     ],
     "rules": {
+        "react-hooks/rules-of-hooks": "error",
+
+        "react-hooks/exhaustive-deps": "warn",
+
+        "react/display-name": "off",
+
+        "react/function-component-definition": ["error", {"namedComponents": "function-declaration", "unnamedComponents": "arrow-function"}],
+
+        "react/hook-use-state": "error",
+
+        "react/destructuring-assignment": "warn",
+
+        "react/no-adjacent-inline-elements": "warn",
+
+        "react/no-array-index-key": "error",
+
+        "react/no-unused-state": "warn",
+
+        "react/jsx-closing-bracket-location": "warn",
+
+        "react/jsx-closing-tag-location": "warn",
+
+        "react/jsx-child-element-spacing": "warn",
+
+        "react/jsx-curly-newline": "warn",
+
+        "react/jsx-curly-spacing": "warn",
+
+        "react/jsx-equals-spacing": "warn",
+
+        "react/jsx-indent": "warn",
+
+        "react/jsx-pascal-case": "warn",
+
         "no-trailing-spaces": "warn",
 
         "max-len": ["warn", { "code": 100, "ignoreStrings": true, "ignoreTemplateLiterals": true, "ignoreRegExpLiterals": true }],
